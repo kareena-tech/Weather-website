@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WeatherScope | Modern Weather Forecast</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Chart.js for Interactive Temperature Trends -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+
+<body class="theme-clear-day">
+    <!-- Background dynamic ambient orbs -->
+    <div class="ambient-glow glow-1"></div>
+    <div class="ambient-glow glow-2"></div>
+
+    <div class="app-container">
+        <!-- Top Navigation & Search Bar -->
+        <header class="app-header">
+            <div class="logo">
+                <i class="fa-solid fa-cloud-sun-rain logo-icon"></i>
+                <div class="logo-text">
+                    <span class="logo-title">Weather<strong>Scope</strong></span>
+                    <span class="logo-badge">Live API</span>
+                </div>
+            </div>
+
+            <!-- Search Area -->
+            <div class="search-container">
+                <div class="search-box">
+                    <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                    <input type="text" id="cityInput" placeholder="Search city, state, or country..." autocomplete="off"
+                        spellcheck="false" />
+                    <button id="clearSearchBtn" class="clear-btn" title="Clear search">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                    <button id="searchBtn" class="search-action-btn" title="Search">
+                        Search
+                    </button>
+                </div>
+                <!-- Autocomplete Dropdown -->
+                <ul id="searchSuggestions" class="suggestions-list hidden"></ul>
+            </div>
+
+            <!-- Controls (GPS & Unit Switch) -->
+            <div class="header-controls">
+                <button id="locationBtn" class="control-btn" title="Use My Current Location">
+                    <i class="fa-solid fa-location-crosshairs"></i>
+                    <span class="btn-text">My Location</span>
+                </button>
+
+                <div class="unit-toggle" title="Toggle Temperature Unit">
+                    <button id="unitCelsius" class="unit-btn active">°C</button>
+                    <button id="unitFahrenheit" class="unit-btn">°F</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Quick City Pills -->
+        <div class="quick-cities">
+            <span class="quick-label"><i class="fa-solid fa-fire"></i> Popular:</span>
+            <div class="pills-wrapper">
+                <button class="city-pill" data-city="New Delhi">New Delhi</button>
+                <button class="city-pill" data-city="London">London</button>
+                <button class="city-pill" data-city="New York">New York</button>
+                <button class="city-pill" data-city="Tokyo">Tokyo</button>
+                <button class="city-pill" data-city="Paris">Paris</button>
+                <button class="city-pill" data-city="Dubai">Dubai</button>
+                <button class="city-pill" data-city="Sydney">Sydney</button>
+            </div>
+        </div>
+
+        <!-- Alert / Error Banner -->
+        <div id="errorBanner" class="error-banner hidden">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <span id="errorMessage">Could not fetch weather data.</span>
+            <button id="closeErrorBtn" class="close-error"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <!-- Loading Spinner -->
+        <div id="loadingOverlay" class="loading-overlay">
+            <div class="spinner"></div>
+            <p>Fetching real-time atmospheric data...</p>
+        </div>
+
+        <!-- Main Dashboard Content -->
+        <main id="weatherDashboard" class="dashboard-grid">
+            <!-- Hero Card: Current Weather Primary Overview -->
+            <section class="card hero-card">
+                <div class="hero-header">
+                    <div>
+                        <h1 id="locationName" class="location-name">--</h1>
+                        <p id="localDateTime" class="datetime-label">--</p>
+                    </div>
+                    <span id="weatherCategoryBadge" class="category-badge">--</span>
+                </div>
+
+                <div class="hero-body">
+                    <div class="temp-display">
+                        <div class="weather-visual">
+                            <i id="mainWeatherIcon" class="fa-solid fa-sun weather-icon-large"></i>
+                        </div>
+                        <div class="temp-numbers">
+                            <span id="currentTemp" class="temp-val">--</span>
+                            <span class="temp-degree">°</span>
+                        </div>
+                    </div>
+
+                    <div class="hero-details">
+                        <h2 id="weatherCondition" class="condition-text">Loading...</h2>
+                        <p class="feels-like-text">Feels like <span id="apparentTemp">--</span>°</p>
+                        <div class="high-low-pill">
+                            <span><i class="fa-solid fa-arrow-up"></i> High: <strong
+                                    id="tempMaxToday">--</strong>°</span>
+                            <span class="divider">•</span>
+                            <span><i class="fa-solid fa-arrow-down"></i> Low: <strong
+                                    id="tempMinToday">--</strong>°</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Metrics Grid -->
+            <section class="metrics-grid">
+                <!-- Humidity Card -->
+                <div class="card metric-card">
+                    <div class="metric-top">
+                        <span class="metric-title"><i class="fa-solid fa-droplet text-blue"></i> Humidity</span>
+                        <span id="humidityStatus" class="metric-pill">--</span>
+                    </div>
+                    <div class="metric-value-wrap">
+                        <span id="humidityVal" class="metric-number">--</span>
+                        <span class="metric-unit">%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div id="humidityProgress" class="progress-fill" style="width: 0%;"></div>
+                    </div>
+                </div>
+
+                <!-- Wind Card -->
+                <div class="card metric-card">
+                    <div class="metric-top">
+                        <span class="metric-title"><i class="fa-solid fa-wind text-teal"></i> Wind Speed</span>
+                        <i id="windDirectionIcon" class="fa-solid fa-location-arrow compass-icon"></i>
+                    </div>
+                    <div class="metric-value-wrap">
+                        <span id="windSpeedVal" class="metric-number">--</span>
+                        <span id="windSpeedUnit" class="metric-unit">km/h</span>
+                    </div>
+                    <p id="windDirectionText" class="metric-subtext">Direction: --°</p>
+                </div>
+
+                <!-- UV Index Card -->
+                <div class="card metric-card">
+                    <div class="metric-top">
+                        <span class="metric-title"><i class="fa-solid fa-sun text-yellow"></i> UV Index</span>
+                        <span id="uvRiskBadge" class="metric-pill uv-badge">--</span>
+                    </div>
+                    <div class="metric-value-wrap">
+                        <span id="uvIndexVal" class="metric-number">--</span>
+                        <span class="metric-unit">/ 11+</span>
+                    </div>
+                    <p id="uvAdviceText" class="metric-subtext">--</p>
+                </div>
+
+                <!-- Pressure Card -->
+                <div class="card metric-card">
+                    <div class="metric-top">
+                        <span class="metric-title"><i class="fa-solid fa-gauge-high text-purple"></i> Pressure</span>
+                    </div>
+                    <div class="metric-value-wrap">
+                        <span id="pressureVal" class="metric-number">--</span>
+                        <span class="metric-unit">hPa</span>
+                    </div>
+                    <p id="pressureStatus" class="metric-subtext">Standard atmospheric</p>
+                </div>
+
+                <!-- Sunrise & Sunset Card -->
+                <div class="card metric-card sun-cycle-card">
+                    <div class="metric-top">
+                        <span class="metric-title"><i class="fa-solid fa-sun-plant-wilt text-amber"></i> Sun
+                            Schedule</span>
+                    </div>
+                    <div class="sun-times-row">
+                        <div class="sun-time-item">
+                            <i class="fa-regular fa-sun text-amber"></i>
+                            <div>
+                                <small>Sunrise</small>
+                                <p id="sunriseTime">--:--</p>
+                            </div>
+                        </div>
+                        <div class="sun-time-divider"></div>
+                        <div class="sun-time-item">
+                            <i class="fa-solid fa-moon text-indigo"></i>
+                            <div>
+                                <small>Sunset</small>
+                                <p id="sunsetTime">--:--</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Precipitation Card -->
+                <div class="card metric-card">
+                    <div class="metric-top">
+                        <span class="metric-title"><i class="fa-solid fa-cloud-showers-heavy text-cyan"></i>
+                            Precipitation</span>
+                    </div>
+                    <div class="metric-value-wrap">
+                        <span id="precipVal" class="metric-number">--</span>
+                        <span class="metric-unit">mm</span>
+                    </div>
+                    <p id="precipProbability" class="metric-subtext">Chance: --%</p>
+                </div>
+            </section>
+
+            <!-- Hourly Forecast & Interactive Chart Section -->
+            <section class="card forecast-section">
+                <div class="section-header">
+                    <div>
+                        <h2><i class="fa-regular fa-clock"></i> 24-Hour Forecast</h2>
+                        <p class="section-subtitle">Real-time temperature & precipitation timeline</p>
+                    </div>
+                    <div class="view-toggles">
+                        <button id="hourlyCardsBtn" class="tab-btn active"><i class="fa-solid fa-grip"></i>
+                            Timeline</button>
+                        <button id="hourlyChartBtn" class="tab-btn"><i class="fa-solid fa-chart-line"></i>
+                            Chart</button>
+                    </div>
+                </div>
+
+                <!-- Hourly Cards Container -->
+                <div id="hourlyCardsView" class="hourly-slider-container">
+                    <div id="hourlyTrack" class="hourly-track">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Hourly Chart View -->
+                <div id="hourlyChartView" class="chart-container hidden">
+                    <canvas id="tempChart"></canvas>
+                </div>
+            </section>
+
+            <!-- 7-Day Extended Forecast Section -->
+            <section class="card daily-forecast-section">
+                <div class="section-header">
+                    <div>
+                        <h2><i class="fa-regular fa-calendar-days"></i> 7-Day Weather Outlook</h2>
+                        <p class="section-subtitle">Day by day temperature range and conditions</p>
+                    </div>
+                </div>
+                <div id="dailyList" class="daily-list">
+                    <!-- Populated by JavaScript -->
+                </div>
+            </section>
+        </main>
+
+        <!-- College Project Info Footer -->
+        <footer class="app-footer">
+            <div class="footer-content">
+                <p class="project-tag">
+                    <i class="fa-solid fa-graduation-cap"></i>
+                    <strong>First Year Engineering College Project</strong> — Interactive Web Weather Station
+                </p>
+                <p class="tech-stack-badges">
+                    <span class="badge">Python (Flask)</span>
+                    <span class="badge">JavaScript (ES6+)</span>
+                    <span class="badge">HTML5 & CSS3</span>
+                    <span class="badge">Open-Meteo REST API</span>
+                    <span class="badge">Chart.js</span>
+                </p>
+                <small class="attribution">Data provided by Open-Meteo open-source meteorological API (Zero API Key
+                    required).</small>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Application JavaScript -->
+    <script src="/static/js/app.js"></script>
+</body>
+
+</html>
